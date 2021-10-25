@@ -3,19 +3,17 @@ import os
 from PyQt5 import QtWidgets, uic
 import paramiko
 import threading
-import time
-import configparser
 from PyQt5.QtCore import Qt 
 import numpy as np
 
 
 
 
-serial = 'serial name'
-script = 'python3 EDFA.py'
+serial = 'serial name'          #Enter instrument serial address here
+script = 'python3 serial.py'    #This instrument uses serial to communicate
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-cwd = cwd + '\\fiberlabs_EDFA.ui'
+cwd = cwd + '\\fiberlabs_EDFA.ui'   #UI file directory
 
 class Ui(QtWidgets.QMainWindow):
     
@@ -244,6 +242,7 @@ class Ui(QtWidgets.QMainWindow):
         channel = eval(f'self.alm_{alm}').currentIndex() + 1
         thresh =  eval(f'self.alm_th_{alm}').value()
         hyst = eval(f'self.alm_hys_{alm}').value()
+        
         if eval(f'self.alm_set_{alm}').isChecked():
             eval(f'self.alm_set_{alm}').setText('On')
             command = (f'{command},{channel},{thresh},1,{hyst}')
@@ -300,14 +299,11 @@ class Ui(QtWidgets.QMainWindow):
 
         line1 = str(self.stdout.readline()) #Ignore input line when reading
         if response:
-            timeout = time.time() + 5       #Waits 5 seconds for a response then timesout
-            while time.time() < timeout:
-                line2 = str(self.stdout.readline())
-                data = line2.splitlines()[0]
-                self.input_flag = 1
-                return data
+            line2 = str(self.stdout.readline())
+            data = line2.splitlines()[0]
+            self.input_flag = 1
+            return data
 
-            print('read line faliure')
         self.input_flag = 1
                 
                 
@@ -319,7 +315,7 @@ class Ui(QtWidgets.QMainWindow):
         try:
             self.ssh.connect('192.168.0.254', username='pi', password='raspberry', timeout=5)
             
-            self.stdin, self.stdout, stderr = self.ssh.exec_command(script, get_pty=True)
+            self.stdin, self.stdout, stderr = self.ssh.exec_command(command=script, timeout=3, get_pty=True)
                         
         except:
             print('Connection failed. \nCheck connection and try again')
@@ -328,42 +324,30 @@ class Ui(QtWidgets.QMainWindow):
 
     #A seperate thread that continously requests the EDFA monitor values
     def listen(self):
-        
-        flag = 0 ###########
+
         while True:
             if self.input_flag: #Runs only if no other commands are being sent
                 self._event.set() #Sets internal flag to true to block the set_command() function
 
-                if flag:
-                    #All commands sent receive data for 4 channels separated by commas
-                    power_in = self.send_command('monin', True)
-                    self.power_in = power_in.split(',')
-                    power_out = self.send_command('monout', True)
-                    self.power_out = power_out.split(',')
-                    current = self.send_command('monldc', True)
-                    self.current = current.split(',')
-                    temp = self.send_command('monldt', True)
-                    self.temp = temp.split(',')
-                    flag = 0 ##############
-                else:
-                    power_in = self.send_command('4', True) ############
-                    self.power_in = power_in.split(',') ###########
-                    power_out = self.send_command('5', True) ############
-                    self.power_out = power_out.split(',') #############
-                    current = self.send_command('6', True) #############
-                    self.current = current.split(',') #############
-                    temp = self.send_command('7', True) ##########
-                    self.temp = temp.split(',') ##############
-                    flag = 1 #################
+                #All commands sent receive data for 4 channels separated by commas
+                power_in = self.send_command('monin', True)
+                self.power_in = power_in.split(',')
+                power_out = self.send_command('monout', True)
+                self.power_out = power_out.split(',')
+                current = self.send_command('monldc', True)
+                self.current = current.split(',')
+                temp = self.send_command('monldt', True)
+                self.temp = temp.split(',')
                 
                 #Update monitor values
                 for channel in range(1,5):
                     try:
-                        eval(f'self.power_in_{channel}').setText(str(float(self.power_in[channel-1])))      #Ensures that the value returned is a number
-                        eval(f'self.power_out_{channel}').setText(str(float(self.power_out[channel-1])))    #otherwise the channel is N/A
+                        eval(f'self.power_in_{channel}').setText(str(float(self.power_in[channel-1])))      #Converts string to float to ensure that the value returned is a number
+                        eval(f'self.power_out_{channel}').setText(str(float(self.power_out[channel-1])))    #Then converts back to string for writing 
                         eval(f'self.current_{channel}').setText(str(float(self.current[channel-1])))
                         eval(f'self.temp_{channel}').setText(str(float(self.temp[channel-1])))
-                        
+
+                    #Otherwise the channel is N/A    
                     except:
                         eval(f'self.power_in_{channel}').setText('N/A')
                         eval(f'self.power_out_{channel}').setText('N/A')
@@ -371,7 +355,7 @@ class Ui(QtWidgets.QMainWindow):
                         eval(f'self.temp_{channel}').setText('N/A')
 
                 self._event.clear()     #sets the internal flag to false
-                self._event.wait(1)     #waits for 1 second
+                self._event.wait(2)     #waits for 2 seconds
             pass
 
 
