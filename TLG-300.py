@@ -2,19 +2,16 @@ import sys
 import os 
 from PyQt5 import QtWidgets, uic
 import paramiko
-import threading
-import time
-import configparser
 from PyQt5.QtCore import Qt 
 
 
 
 
-serial = 'serial name'
-script = 'python3 TLG-300.py'
+serial = 'serial name'          #Enter instrument serial address here
+script = 'python3 serial.py'    #This instrument uses serial to communicate
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-cwd = cwd + '\\TLG-300.ui'
+cwd = cwd + '\\TLG-300.ui'      #UI file directory
 
 class Ui(QtWidgets.QMainWindow):
     
@@ -22,25 +19,35 @@ class Ui(QtWidgets.QMainWindow):
         
         super(Ui, self).__init__()
         uic.loadUi(cwd, self)
-        self.settings_box()
+        self.settings_box()     #Creates settings box in top right-hand corner
         self.show()
 
-        self.num_channels = 48
-        self.prev = 0
+        self.num_channels = 8
 
+        self.prev = 0           #Initialise frequency unit type
+        self.current_unit = 0   
+
+        #Connect parameter unit radio buttons in top right-hand corner
         self.hertz.toggled.connect(lambda:self.radiobuttons(self.hertz, 0))
         self.nano_meters.toggled.connect(lambda:self.radiobuttons(self.nano_meters, 1))
         self.grid.toggled.connect(lambda:self.radiobuttons(self.grid, 2))
-        self.current_unit = 0
         
+        #Connect diser control buttons in top right-hand corner
         self.diser_box.toggled.connect(self.diser_control)
 
-        self.laser_connection()
 
-        self.config_connection()
+        self.laser_connection()     #Connects each channel's laser on/off button
+        self.config_connection()    #Connects each channel's diser control button
+
+        #Set-up SSH connection
         self.ssh_setup() 
+
+        #The first command sent is the serial address for the device we are connecting to
+        self.send_command(serial, True)
         
-            
+     
+
+    #Connects every channel's laser on/off button 
     def laser_connection(self):
         self.laser_1.clicked.connect(lambda:self.laser_button(1))
         self.laser_2.clicked.connect(lambda:self.laser_button(2))
@@ -50,52 +57,9 @@ class Ui(QtWidgets.QMainWindow):
         self.laser_6.clicked.connect(lambda:self.laser_button(6))
         self.laser_7.clicked.connect(lambda:self.laser_button(7))
         self.laser_8.clicked.connect(lambda:self.laser_button(8))
-        self.laser_9.clicked.connect(lambda:self.laser_button(9))
-        self.laser_10.clicked.connect(lambda:self.laser_button(10))
-
-        self.laser_11.clicked.connect(lambda:self.laser_button(11))
-        self.laser_12.clicked.connect(lambda:self.laser_button(12))
-        self.laser_13.clicked.connect(lambda:self.laser_button(13))
-        self.laser_14.clicked.connect(lambda:self.laser_button(14))
-        self.laser_15.clicked.connect(lambda:self.laser_button(15))
-        self.laser_16.clicked.connect(lambda:self.laser_button(16))
-        self.laser_17.clicked.connect(lambda:self.laser_button(17))
-        self.laser_18.clicked.connect(lambda:self.laser_button(18))
-        self.laser_19.clicked.connect(lambda:self.laser_button(19))
-        self.laser_20.clicked.connect(lambda:self.laser_button(20))
-
-        self.laser_21.clicked.connect(lambda:self.laser_button(21))
-        self.laser_22.clicked.connect(lambda:self.laser_button(22))
-        self.laser_23.clicked.connect(lambda:self.laser_button(23))
-        self.laser_24.clicked.connect(lambda:self.laser_button(24))
-        self.laser_25.clicked.connect(lambda:self.laser_button(25))
-        self.laser_26.clicked.connect(lambda:self.laser_button(26))
-        self.laser_27.clicked.connect(lambda:self.laser_button(27))
-        self.laser_28.clicked.connect(lambda:self.laser_button(28))
-        self.laser_29.clicked.connect(lambda:self.laser_button(29))
-        self.laser_30.clicked.connect(lambda:self.laser_button(30))
-
-        self.laser_31.clicked.connect(lambda:self.laser_button(31))
-        self.laser_32.clicked.connect(lambda:self.laser_button(32))
-        self.laser_33.clicked.connect(lambda:self.laser_button(33))
-        self.laser_34.clicked.connect(lambda:self.laser_button(34))
-        self.laser_35.clicked.connect(lambda:self.laser_button(35))
-        self.laser_36.clicked.connect(lambda:self.laser_button(36))
-        self.laser_37.clicked.connect(lambda:self.laser_button(37))
-        self.laser_38.clicked.connect(lambda:self.laser_button(38))
-        self.laser_39.clicked.connect(lambda:self.laser_button(39))
-        self.laser_40.clicked.connect(lambda:self.laser_button(40))
-
-        self.laser_41.clicked.connect(lambda:self.laser_button(41))
-        self.laser_42.clicked.connect(lambda:self.laser_button(42))
-        self.laser_43.clicked.connect(lambda:self.laser_button(43))
-        self.laser_44.clicked.connect(lambda:self.laser_button(44))
-        self.laser_45.clicked.connect(lambda:self.laser_button(45))
-        self.laser_46.clicked.connect(lambda:self.laser_button(46))
-        self.laser_47.clicked.connect(lambda:self.laser_button(47))
-        self.laser_48.clicked.connect(lambda:self.laser_button(48))
+          
         
-
+    #Connects every channe;'s configure button
     def config_connection(self):
         self.config_1.clicked.connect(lambda:self.config_button(1))
         self.config_2.clicked.connect(lambda:self.config_button(2))
@@ -105,52 +69,9 @@ class Ui(QtWidgets.QMainWindow):
         self.config_6.clicked.connect(lambda:self.config_button(6))
         self.config_7.clicked.connect(lambda:self.config_button(7))
         self.config_8.clicked.connect(lambda:self.config_button(8))
-        self.config_9.clicked.connect(lambda:self.config_button(9))
-        self.config_10.clicked.connect(lambda:self.config_button(10))
 
-        self.config_11.clicked.connect(lambda:self.config_button(11))
-        self.config_12.clicked.connect(lambda:self.config_button(12))
-        self.config_13.clicked.connect(lambda:self.config_button(13))
-        self.config_14.clicked.connect(lambda:self.config_button(14))
-        self.config_15.clicked.connect(lambda:self.config_button(15))
-        self.config_16.clicked.connect(lambda:self.config_button(16))
-        self.config_17.clicked.connect(lambda:self.config_button(17))
-        self.config_18.clicked.connect(lambda:self.config_button(18))
-        self.config_19.clicked.connect(lambda:self.config_button(19))
-        self.config_20.clicked.connect(lambda:self.config_button(20))
 
-        self.config_21.clicked.connect(lambda:self.config_button(21))
-        self.config_22.clicked.connect(lambda:self.config_button(22))
-        self.config_23.clicked.connect(lambda:self.config_button(23))
-        self.config_24.clicked.connect(lambda:self.config_button(24))
-        self.config_25.clicked.connect(lambda:self.config_button(25))
-        self.config_26.clicked.connect(lambda:self.config_button(26))
-        self.config_27.clicked.connect(lambda:self.config_button(27))
-        self.config_28.clicked.connect(lambda:self.config_button(28))
-        self.config_29.clicked.connect(lambda:self.config_button(29))
-        self.config_30.clicked.connect(lambda:self.config_button(30))
-
-        self.config_31.clicked.connect(lambda:self.config_button(31))
-        self.config_32.clicked.connect(lambda:self.config_button(32))
-        self.config_33.clicked.connect(lambda:self.config_button(33))
-        self.config_34.clicked.connect(lambda:self.config_button(34))
-        self.config_35.clicked.connect(lambda:self.config_button(35))
-        self.config_36.clicked.connect(lambda:self.config_button(36))
-        self.config_37.clicked.connect(lambda:self.config_button(37))
-        self.config_38.clicked.connect(lambda:self.config_button(38))
-        self.config_39.clicked.connect(lambda:self.config_button(39))
-        self.config_40.clicked.connect(lambda:self.config_button(40))
-
-        self.config_41.clicked.connect(lambda:self.config_button(41))
-        self.config_42.clicked.connect(lambda:self.config_button(42))
-        self.config_43.clicked.connect(lambda:self.config_button(43))
-        self.config_44.clicked.connect(lambda:self.config_button(44))
-        self.config_45.clicked.connect(lambda:self.config_button(45))
-        self.config_46.clicked.connect(lambda:self.config_button(46))
-        self.config_47.clicked.connect(lambda:self.config_button(47))
-        self.config_48.clicked.connect(lambda:self.config_button(48))
-        
-
+    #function creates the box in the top-right corner of the GUI
     def settings_box(self):
         # create the container and its layout
         self.settings_container = QtWidgets.QWidget()
@@ -225,6 +146,7 @@ class Ui(QtWidgets.QMainWindow):
         self.diser_all_off.setChecked(True)
 
 
+    #Prompts the user bvefore exiting
     def closeEvent(self,event):
         result = QtWidgets.QMessageBox.question(self,
                       "Confirm Exit...",
@@ -234,20 +156,23 @@ class Ui(QtWidgets.QMainWindow):
 
         if result == QtWidgets.QMessageBox.Yes:
             event.accept()
-            self.ssh.close() 
+            self.ssh.close()        #Closes the ssh connection to the raspberry pi
 
 
+    #sets whether hertz, wavelength or GRID is used for laser frequency
     def radiobuttons(self,unit, param):
         if unit.isChecked():
-            print(unit.text())
-            self.current_unit = param
-            for channel in range(1,self.num_channels + 1):
+            
+            self.current_unit = param       #Stores current unit type for use in config_button function
+            for channel in range(1,self.num_channels + 1):      #Changes setting for all channels
                 eval(f'self.freq_unit_{channel}').setText(unit.text())
+
+                #Sets the laser frequency in hertz
                 if param == 0:
                     if self.prev == 1:
-                        new_value = 299792.458/eval(f'self.freq_{channel}').value()
+                        new_value = 299792.458/eval(f'self.freq_{channel}').value()         #Converts wavelength to hertz
                     else:
-                        new_value = 191.5+(((19/72)*eval(f'self.freq_{channel}').value())-(19/72))
+                        new_value = 191.5+(((19/72)*eval(f'self.freq_{channel}').value())-(19/72))      #Converts GRID to hertz
 
                     eval(f'self.freq_{channel}').setDecimals(4)
                     eval(f'self.freq_{channel}').setMaximum(196.25)
@@ -256,12 +181,12 @@ class Ui(QtWidgets.QMainWindow):
                     eval(f'self.freq_{channel}').setSingleStep(0.1)
                     eval(f'self.freq_{channel}').setValue(round(new_value,4))
                     
-                    
+                #Sets the laser frequency in terms of wavelength    
                 elif param == 1:
                     if self.prev == 0:
-                        new_value = 299792.458/eval(f'self.freq_{channel}').value() 
+                        new_value = 299792.458/eval(f'self.freq_{channel}').value()         #Converts hertz to wavelength
                     else:
-                        new_value = 1565.5-(((379/180)*eval(f'self.freq_{channel}').value())-(379/180))
+                        new_value = 1565.5-(((379/180)*eval(f'self.freq_{channel}').value())-(379/180))     #Converts GRID to wavelength
 
                     eval(f'self.freq_{channel}').setDecimals(3)
                     eval(f'self.freq_{channel}').setMaximum(1565.5)
@@ -270,12 +195,12 @@ class Ui(QtWidgets.QMainWindow):
                     eval(f'self.freq_{channel}').setSingleStep(0.5)
                     eval(f'self.freq_{channel}').setValue(round(new_value,3))
                     
-
+                #Sets the laser frequency in terms of GRID value
                 else:
                     if self.prev == 0:
-                        new_value = 20-((196.25-eval(f'self.freq_{channel}').value())+(19/72))/(19/72)
+                        new_value = 20-((196.25-eval(f'self.freq_{channel}').value())+(19/72))/(19/72)      #Converts hertz to GRID
                     else:
-                        new_value = ((1565.5-eval(f'self.freq_{channel}').value()+(379/180)))/(379/180)
+                        new_value = ((1565.5-eval(f'self.freq_{channel}').value()+(379/180)))/(379/180)     #Converts wavelength to GRID
 
                     eval(f'self.freq_{channel}').setDecimals(0)
                     eval(f'self.freq_{channel}').setMaximum(19)
@@ -283,10 +208,11 @@ class Ui(QtWidgets.QMainWindow):
                     eval(f'self.freq_{channel}').setSingleStep(1)
                     eval(f'self.freq_{channel}').setValue(round(new_value))
                     
-
+        #Stores current unit type as previous for conversion if changed
         self.prev = param
 
 
+    #Enables or diables every channel's diser control settings depending on overall diser control in top RHC
     def diser_control(self):
         if self.diser_box.isChecked():
             for channel in range(1,self.num_channels + 1):
@@ -299,56 +225,69 @@ class Ui(QtWidgets.QMainWindow):
                 eval(f'self.diser_off_{channel}').setEnabled(True)
 
 
+    #Sends command to enable laser
     def laser_button(self, channel):
-        self.send_command(f'CH{channel}', True)
+        self.send_command(f'CH{channel}', True)     #Sets the current channel to control
+
         if eval(f'self.laser_{(channel)}').isChecked():
             eval(f'self.laser_{(channel)}').setText('Laser: On')
+
+            #Changes LED to green
             eval(f'self.led_{channel}').setStyleSheet('border-color: rgb(0, 0, 0);'
                 'border-width: 1px;'       
                 'border-style: solid;'
                 'border-radius: 15px;'
                 'background-color: rgb(55, 255, 55);')
-            self.send_command('LE1', True)
+
+            self.send_command('LE1', True)          #Turns laser on
             
         else:
             eval(f'self.laser_{(channel)}').setText('Laser: Off')
+
+            #Changes LED to green
             eval(f'self.led_{channel}').setStyleSheet('border-color: rgb(0, 0, 0);'
                 'border-width: 1px;'       
                 'border-style: solid;'
                 'border-radius: 15px;'
                 'background-color: rgb(255, 55, 55);')
-            self.send_command('LE0', True)
+            self.send_command('LE0', True)          #Turns laser off
             
 
     def config_button(self, channel):
         freq = eval(f'self.freq_{channel}').value()
         power = eval(f'self.power_{channel}').value()
         offset = eval(f'self.offset_{channel}').value()
-        self.send_command(f'CH{channel}', True)
 
+        self.send_command(f'CH{channel}', True) #Sets the current channel to control
+
+        #Checks channelfrequency unit type and sends corresponding command
         if self.current_unit == 0:
             self.send_command(f'LF{round(freq,4)}', True)
-
         elif self.current_unit == 1:
             self.send_command(f'LW{round(freq,3)}', True)
-
         else:
             self.send_command(f'LG{round(freq)}', True)
 
+        #Sends commands for power and offset
         self.send_command(f'LP{power}', True)
         self.send_command(f'FT{offset}', True)
 
+        #Checks total diser control status, if not, checks channell diser control status
+        #Sends diser on/off command 
         if self.diser_box.isChecked():
             if self.diser_all_on.isChecked():
                 self.send_command('DS0', True)
             else:
                 self.send_command('DS1', True)
+
         elif eval(f'self.diser_on_{channel}').isChecked():
             self.send_command('DS0', True)
         else:
             self.send_command('DS1', True)
 
 
+    #Sends a command over serial
+    #If the command receives a response it is returned
     def send_command(self, command, response):
         serial_command = command + '\n'  
         
@@ -357,28 +296,24 @@ class Ui(QtWidgets.QMainWindow):
 
         line1 = str(self.stdout.readline()) #Ignore input line when reading
         if response:
-            timeout = time.time() + 3       #Waits 5 seconds for a response then timesout
-            while time.time() < timeout:
-                line2 = str(self.stdout.readline())
-                data = line2.splitlines()[0]
-                self.input_flag = 1
-                print(data)
-                return data
+            line2 = str(self.stdout.readline())
+            data = line2.splitlines()[0]
+            self.input_flag = 1
+            print(data)
+            return data
 
-            print('read line faliure')
         self.input_flag = 1
         
         
-
+    #Establishes connection to raspberry pi
+    #Ensure that the raspberry ip, username and password are correct
     def ssh_setup(self):
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             self.ssh.connect('192.168.0.254', username='pi', password='raspberry', timeout=5)
             
-            self.stdin, self.stdout, stderr = self.ssh.exec_command(script, get_pty=True)
-            self.send_command(serial, True)
-            
+            self.stdin, self.stdout, stderr = self.ssh.exec_command(command=script, timeout=3, get_pty=True)
             
         except:
             print('Connection failed. \nCheck connection and try again')

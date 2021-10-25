@@ -3,19 +3,15 @@ import os
 from PyQt5 import QtWidgets, uic
 import paramiko
 import threading
-import time
-import configparser
-from PyQt5.QtCore import Qt 
-import numpy as np
+import re
 
 
 
-
-serial = 'serial name'
-script = 'python3 EDFA.py'
+serial = 'serial name'          #Enter instrument serial address here
+script = 'python3 serial.py'    #This instrument uses serial to communicat
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-cwd = cwd + '\\lightwaves2020_EDFA.ui'
+cwd = cwd + '\\lightwaves2020_EDFA.ui'  #UI file directory
 
 class Ui(QtWidgets.QMainWindow):
     
@@ -26,7 +22,7 @@ class Ui(QtWidgets.QMainWindow):
         self.show()
 
         #Flag to prevent threads accessing the send_command() function at the same time
-        self.input_flag = 0
+        self.thread_flag = 0
 
         self.gain.valueChanged.connect(self.set_mode_val)
 
@@ -125,7 +121,7 @@ class Ui(QtWidgets.QMainWindow):
     #Sets each alarm
     def alm_set(self, alm):
         
-        if alm == 0:
+        if alm == 0:        #LOS alarm
             if self.LOS_alm_set.isChecked():
                 self.LOS_alm_set.setText('On')
                 command = 'set_los ' + str(self.LOS_alm_val.value())
@@ -134,7 +130,7 @@ class Ui(QtWidgets.QMainWindow):
                 command = 'set_los d'
             self.set_command(command, True)
             
-        elif alm == 1:
+        elif alm == 1:      #Laser current alarm
             if self.current_alm_set.isChecked():
                 self.current_alm_set.setText('On')
                 command = 'set_alarm_ld_crnt ' + str(self.current_alm_val.value())
@@ -143,7 +139,7 @@ class Ui(QtWidgets.QMainWindow):
                 command = 'set_alarm_ld_crnt d'
             self.set_command(command, True)
 
-        else:
+        else:               #Pump tempurature alarm
             if self.temp_alm_set.isChecked():
                 self.temp_alm_set.setText('On')
                 command1 = 'set_alarm_tpump_lo ' + str(self.temp_alm_low.value())
@@ -156,13 +152,11 @@ class Ui(QtWidgets.QMainWindow):
             self.set_command(command2, True)
 
 
-    
-
     #send the command to be sent, but first ensure the listening thread is complete
     def set_command(self, command, response):
         while True:
             if not self._event.is_set():
-                self.input_flag = 0         #blocks the listening thread from running while sending a command
+                self.thread_flag = 0         #blocks the listening thread from running while sending a command
                 data = self.send_command(command,response)
                 #print(data)
                 return data
@@ -177,17 +171,14 @@ class Ui(QtWidgets.QMainWindow):
         self.stdin.flush()
 
         line1 = str(self.stdout.readline()) #Ignore input line when reading
-        if response:
-            timeout = time.time() + 5       #Waits 5 seconds for a response then timesout
-            while time.time() < timeout:
-                line2 = str(self.stdout.readline())
-                data = line2.splitlines()[0]
-                self.input_flag = 1
-                print(data)
-                return data
+        if response: 
+            line2 = str(self.stdout.readline())
+            data = line2.splitlines()[0]
+            self.thread_flag = 1
+            print(data)
+            return data
 
-            print('read line faliure')
-        self.input_flag = 1
+        self.thread_flag = 1
                 
                 
     #Establishes connection to raspberry pi
@@ -198,7 +189,7 @@ class Ui(QtWidgets.QMainWindow):
         try:
             self.ssh.connect('192.168.0.254', username='pi', password='raspberry', timeout=5)
             
-            self.stdin, self.stdout, stderr = self.ssh.exec_command(script, get_pty=True)
+            self.stdin, self.stdout, stderr = self.ssh.exec_command(command=script, timeout=3, get_pty=True)
                         
         except:
             print('Connection failed. \nCheck connection and try again')
@@ -209,26 +200,52 @@ class Ui(QtWidgets.QMainWindow):
     def listen(self):
         
         while True:
-            if self.input_flag: #Runs only if no other commands are being sent
+            if self.thread_flag: #Runs only if no other commands are being sent
                 self._event.set() #Sets internal flag to true to block the set_command() function
 
                 
-                #All commands sent receive data for 4 channels separated by commas
-                '''
-                power = self.send_command('get_mpd all', True)
-                
-                laser_current = self.send_command('get_ld_crnt', True)
-                
-                pump_current = self.send_command('get_ld_tec', True)
-                
-                pump_temp = self.send_command('get_tpump', True)
+                #Command sent sometimes start with 'msa::edfa>' then some float
+                #Uses re.findall to find 1 decimal floats in string
+                try:
 
-                case_temp = self.send_command('get_tcase', True)
-                '''
+                    power = self.send_command('get_mpd all', True)
+                    power_float_list = re.findall('\d+\.\d+',power)
+                    power = power_float_list[0]
+
+                    laser_current = self.send_command('get_ld_crnt', True)
+                    Lcurrent_float_list = re.findall('\d+\.\d+',laser_current)
+                    laser_current = Lcurrent_float_list[0]
+                    
+                    pump_current = self.send_command('get_ld_tec', True)
+                    Pcurrent_float_list = re.findall('\d+\.\d+',pump_current)
+                    pump_current = Pcurrent_float_list[0]
+                    
+                    pump_temp = self.send_command('get_tpump', True)
+                    Ptemp_float_list = re.findall('\d+\.\d+',pump_temp)
+                    pump_temp = Ptemp_float_list[0]
+
+                    case_temp = self.send_command('get_tcase', True)
+                    Ctemp_float_list = re.findall('\d+\.\d+',case_temp)
+                    case_temp = Ctemp_float_list[0]
+                    
+                
+                    self.pwr_out.setText(power)
+                    self.laser_current.setText(laser_current)
+                    self.pump_current.setText(pump_current)
+                    self.pump_temp.setText(pump_temp)
+                    self.case_temp.setText(case_temp)
+
+                #If there is an error sets outputs to N/A
+                except:
+                    self.pwr_out.setText('N/A')
+                    self.laser_current.setText('N/A')
+                    self.pump_current.setText('N/A')
+                    self.pump_temp.setText('N/A')
+                    self.case_temp.setText('N/A')
                 
 
                 self._event.clear()     #sets the internal flag to false
-                self._event.wait(3)     #waits for 1 second
+                self._event.wait(2)     #waits for 2 seconds
             pass
 
 

@@ -1,7 +1,6 @@
 import sys
 import os 
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import Qt 
 import subprocess
 
 
@@ -22,14 +21,14 @@ class Ui(QtWidgets.QMainWindow):
         uic.loadUi(cwd + '\\ICmain.ui', self)
         self.show()
 
-        self.pushButton_1.clicked.connect(lambda:self.open('N77.py'))
-        self.pushButton_2.clicked.connect(lambda:self.open('TLG-300.py'))
-        self.pushButton_3.clicked.connect(lambda:self.open('fiberlabs_EDFA.py'))
-        self.pushButton_4.clicked.connect(lambda:self.open('lightwaves2020_EDFA.py'))
-
+        self.pushButton_1.clicked.connect(lambda:self.open('N7751A.py'))
+        self.pushButton_2.clicked.connect(lambda:self.open('N7762A.py'))
+        self.pushButton_3.clicked.connect(lambda:self.open('TLG-300.py'))
+        self.pushButton_4.clicked.connect(lambda:self.open('fiberlabs_EDFA.py'))
+        self.pushButton_5.clicked.connect(lambda:self.open('lightwaves2020_EDFA.py'))
+        
 
     def open(self, file):
-        print(file)
         subprocess.Popen(f'start /wait pythonw {cwd}\{file}', shell=True)
 
     

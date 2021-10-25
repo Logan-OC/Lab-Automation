@@ -56,7 +56,7 @@ QTabBar::tab:!selected {
 }</string>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -1122,7 +1122,7 @@ QPushButton:pressed{
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="LOS_buttons"/>
   <buttongroup name="drive_buttons"/>
+  <buttongroup name="LOS_buttons"/>
  </buttongroups>
 </ui>

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Instrument Control Homepage </string>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(230, 230, 230);</string>
@@ -62,8 +62,9 @@ QPushButton:pressed{
 </string>
       </property>
       <property name="text">
-       <string>TLG-300
-Tunable Laser</string>
+       <string>Keysight
+Dual Channel
+Attenuator</string>
       </property>
      </widget>
     </item>
@@ -99,7 +100,7 @@ QPushButton:pressed{
 </string>
       </property>
       <property name="text">
-       <string>LightWaves2020
+       <string>FiberLabs
 EDFA</string>
       </property>
      </widget>
@@ -136,7 +137,8 @@ QPushButton:pressed{
 </string>
       </property>
       <property name="text">
-       <string>Empty Space</string>
+       <string>LightWaves2020
+EDFA</string>
       </property>
      </widget>
     </item>
@@ -175,8 +177,9 @@ QPushButton:pressed{
 </string>
       </property>
       <property name="text">
-       <string>N77xx
-Attenuator</string>
+       <string>Keysight
+Attenuator
+/Power Meter</string>
       </property>
      </widget>
     </item>
@@ -212,8 +215,8 @@ QPushButton:pressed{
 </string>
       </property>
       <property name="text">
-       <string>FiberLabs
-EDFA</string>
+       <string>TLG-300
+Tunable Laser</string>
       </property>
      </widget>
     </item>
@@ -249,7 +252,7 @@ QPushButton:pressed{
 </string>
       </property>
       <property name="text">
-       <string>Empty Space</string>
+       <string/>
       </property>
      </widget>
     </item>
